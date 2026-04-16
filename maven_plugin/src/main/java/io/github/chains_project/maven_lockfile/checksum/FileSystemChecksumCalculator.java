@@ -1,5 +1,6 @@
 package io.github.chains_project.maven_lockfile.checksum;
 
+import com.google.common.base.Strings;
 import com.google.common.io.BaseEncoding;
 import io.github.chains_project.maven_lockfile.data.RepositoryId;
 import io.github.chains_project.maven_lockfile.data.ResolvedUrl;
@@ -131,7 +132,7 @@ public class FileSystemChecksumCalculator extends AbstractChecksumCalculator {
                 break;
             }
 
-            if (repository == null) {
+            if (Strings.isNullOrEmpty(repository)) {
                 // No repository found, possible locally installed artifact or unknown _remote.repositories format
                 return Optional.empty();
             }
@@ -144,7 +145,9 @@ public class FileSystemChecksumCalculator extends AbstractChecksumCalculator {
 
             if (remoteRepository.isEmpty()) {
                 PluginLogManager.getLog()
-                        .warn(String.format("Could not find repository '%s' in building request.", finalRepository));
+                        .warn(String.format(
+                                "Could not find repository '%s' in building request for artifact %s.",
+                                finalRepository, artifact.getId()));
                 return Optional.empty();
             }
 
