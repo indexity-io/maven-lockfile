@@ -23,8 +23,7 @@ public class DependencyGraph {
     public Set<DependencyNode> getRoots() {
         return graph.stream()
                 .filter(node -> node.getParent() == null)
-                .collect(Collectors.toCollection(
-                        () -> new TreeSet<>(Comparator.comparing(DependencyNode::getComparatorString))));
+                .collect(Collectors.toCollection(() -> new TreeSet<>(DependencyNode.COMPARING_GAV_AND_CHECKSUM)));
     }
 
     private DependencyGraph(Set<DependencyNode> graph) {
@@ -44,7 +43,7 @@ public class DependencyGraph {
      * @return a set of all the dependencies
      */
     public Set<DependencyNode> getDependencySet() {
-        var dependencySet = new TreeSet<DependencyNode>();
+        var dependencySet = new TreeSet<>(DependencyNode.COMPARING_GAV_AND_CLASSIFIER);
         var queue = new LinkedList<>(getRoots());
 
         while (!queue.isEmpty()) {
@@ -100,15 +99,14 @@ public class DependencyGraph {
         }
         calc.prewarmArtifactCache(uniqueArtifacts);
 
-        Set<DependencyNode> nodes = new TreeSet<>(Comparator.comparing(DependencyNode::getComparatorString));
+        Set<DependencyNode> nodes = new TreeSet<>(DependencyNode.COMPARING_GAV_AND_CHECKSUM);
         for (var artifact : roots) {
             createDependencyNode(artifact, graph, calc, true, reduced).ifPresent(nodes::add);
         }
         // maven dependency tree contains the project itself as a root node. We remove it here.
         Set<DependencyNode> dependencyRoots = nodes.stream()
                 .flatMap(v -> v.getChildren().stream())
-                .collect(Collectors.toCollection(
-                        () -> new TreeSet<>(Comparator.comparing(DependencyNode::getComparatorString))));
+                .collect(Collectors.toCollection(() -> new TreeSet<>(DependencyNode.COMPARING_GAV_AND_CHECKSUM)));
         dependencyRoots.forEach(v -> v.setParent(null));
         return new DependencyGraph(dependencyRoots);
     }

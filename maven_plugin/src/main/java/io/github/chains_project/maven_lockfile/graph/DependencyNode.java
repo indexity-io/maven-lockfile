@@ -1,5 +1,9 @@
 package io.github.chains_project.maven_lockfile.graph;
 
+import static java.util.Comparator.comparing;
+import static java.util.Comparator.naturalOrder;
+import static java.util.Comparator.nullsLast;
+
 import com.google.gson.annotations.Expose;
 import io.github.chains_project.maven_lockfile.data.ArtifactId;
 import io.github.chains_project.maven_lockfile.data.ArtifactType;
@@ -17,6 +21,17 @@ import java.util.*;
  * It also contains a reference to the parent node.
  */
 public class DependencyNode implements Comparable<DependencyNode> {
+
+    private static final Comparator<DependencyNode> COMPARING_GAV = comparing(
+                    DependencyNode::getGroupId, naturalOrder())
+            .thenComparing(DependencyNode::getArtifactId)
+            .thenComparing(DependencyNode::getVersion);
+
+    public static final Comparator<DependencyNode> COMPARING_GAV_AND_CHECKSUM =
+            COMPARING_GAV.thenComparing(DependencyNode::getChecksum);
+
+    public static final Comparator<DependencyNode> COMPARING_GAV_AND_CLASSIFIER =
+            COMPARING_GAV.thenComparing(DependencyNode::getClassifier, nullsLast(naturalOrder()));
 
     private final GroupId groupId;
     private final ArtifactId artifactId;
@@ -60,7 +75,7 @@ public class DependencyNode implements Comparable<DependencyNode> {
         this.type = type;
         this.checksumAlgorithm = checksumAlgorithm;
         this.checksum = checksum;
-        this.children = new TreeSet<>(Comparator.comparing(DependencyNode::getComparatorString));
+        this.children = new TreeSet<>(DependencyNode.COMPARING_GAV_AND_CHECKSUM);
         this.id = new NodeId(groupId, artifactId, version);
         this.scope = scope;
         this.resolved = resolved;
@@ -234,28 +249,9 @@ public class DependencyNode implements Comparable<DependencyNode> {
 
     @Override
     public int compareTo(DependencyNode o) {
-        int groupIdCompare = groupId.compareTo(o.groupId);
-        if (groupIdCompare != 0) {
-            return groupIdCompare;
-        }
-        int artifactIdCompare = artifactId.compareTo(o.artifactId);
-        if (artifactIdCompare != 0) {
-            return artifactIdCompare;
-        }
-        int versionCompare = version.compareTo(o.version);
-        if (versionCompare != 0) {
-            return versionCompare;
-        }
-        if (classifier == null) {
-            if (o.classifier == null) {
-                return 0;
-            }
-            return -1;
-        }
-        if (o.classifier == null) {
-            return 1;
-        }
-        return classifier.compareTo(o.classifier);
+        // FIXME: Should Comparable even be included
+        // FIXME: This diverges from the equals contract
+        return COMPARING_GAV_AND_CLASSIFIER.compare(this, o);
     }
 
     @Override
@@ -267,8 +263,4 @@ public class DependencyNode implements Comparable<DependencyNode> {
                 + ", children=" + children + ", boms=" + boms + "]";
     }
 
-    public String getComparatorString() {
-        return this.getGroupId().getValue() + "#" + this.getArtifactId().getValue() + "#"
-                + this.getVersion().getValue() + "#" + this.getChecksum();
-    }
 }

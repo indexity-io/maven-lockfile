@@ -4,7 +4,6 @@ import static com.soebes.itf.extension.assertj.MavenITAssertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.google.common.collect.Ordering;
 import com.soebes.itf.jupiter.extension.MavenJupiterExtension;
 import com.soebes.itf.jupiter.extension.MavenTest;
 import com.soebes.itf.jupiter.maven.MavenExecutionResult;
@@ -444,10 +443,11 @@ public class IntegrationTestsIT {
         Path lockFilePath = findFile(result, "lockfile.json");
         assertThat(lockFilePath).exists();
         var lockFile = LockFile.readLockFile(lockFilePath);
-        var dependencyList = lockFile.getDependencies().stream()
-                .map(it -> it.getComparatorString())
+        var dependencyList = new ArrayList<>(lockFile.getDependencies());
+        var sortedList = dependencyList.stream()
+                .sorted(DependencyNode.COMPARING_GAV_AND_CHECKSUM)
                 .collect(Collectors.toList());
-        boolean sorted = Ordering.natural().isOrdered(dependencyList);
+        boolean sorted = dependencyList.equals(sortedList);
         assertThat(sorted).isTrue();
     }
 
