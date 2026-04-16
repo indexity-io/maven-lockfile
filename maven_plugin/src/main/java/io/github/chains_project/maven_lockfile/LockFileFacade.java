@@ -115,10 +115,6 @@ public class LockFileFacade {
                 dependencyCollectorBuilder,
                 checksumCalculator,
                 metadata.getConfig().isReduced());
-        var roots = graph.getGraph().stream()
-                .filter(v -> v.getParent() == null)
-                .collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(
-                        io.github.chains_project.maven_lockfile.graph.DependencyNode::getComparatorString))));
         var pom = constructRecursivePom(project, checksumCalculator);
         var boms = resolveBoms(graph, session, project, checksumCalculator);
 
@@ -127,7 +123,7 @@ public class LockFileFacade {
                 ArtifactId.of(project.getArtifactId()),
                 VersionNumber.of(project.getVersion()),
                 pom,
-                roots,
+                graph.getRoots(),
                 plugins,
                 extensions,
                 metadata,
