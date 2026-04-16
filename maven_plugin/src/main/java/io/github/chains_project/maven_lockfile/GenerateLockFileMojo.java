@@ -81,6 +81,7 @@ public class GenerateLockFileMojo extends AbstractLockfileMojo {
                 config.getOnValidationFailure(),
                 config.getOnPomValidationFailure(),
                 config.getOnEnvironmentalValidationFailure(),
+                config.getOnRepositoryValidationFailure(),
                 config.getEnvironmentInclusion(),
                 config.getReductionState(),
                 mojo.getPlugin().getVersion(),

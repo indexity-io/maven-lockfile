@@ -1,8 +1,44 @@
 package io.github.chains_project.maven_lockfile.data;
 
+import static java.util.Comparator.comparing;
+import static java.util.Comparator.naturalOrder;
+import static java.util.Comparator.nullsLast;
+
+import io.github.chains_project.maven_lockfile.checksum.RepositoryInformation;
+import java.util.Comparator;
 import java.util.Objects;
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.DefaultArtifact;
+import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 
 public class Pom implements Comparable<Pom> {
+
+    private static final Comparator<Pom> COMPARE_GAV_DETAILS =
+            comparing(Pom::getGroupId).thenComparing(Pom::getArtifactId).thenComparing(Pom::getVersion);
+
+    private static final Comparator<Pom> COMPARE_CHECKSUM_DETAILS =
+            comparing(Pom::getChecksumAlgorithm).thenComparing(Pom::getChecksum);
+
+    // Poms are either defined by their relative path or resolved from a repository by their GAV.
+    // We cannot know where poms defined by their relative path will be hosted and thus their
+    // resolved fields are null in this case.
+    private static final Comparator<Pom> COMPARE_REPOSITORY_DETAILS = comparing(
+                    Pom::getResolved, nullsLast(naturalOrder()))
+            .thenComparing(Pom::getRepositoryId, nullsLast(naturalOrder()))
+            .thenComparing(Pom::getRelativePath, nullsLast(naturalOrder()));
+
+    private static final Comparator<Pom> COMPARE_ALL_DETAILS =
+            COMPARE_GAV_DETAILS.thenComparing(COMPARE_CHECKSUM_DETAILS).thenComparing(COMPARE_REPOSITORY_DETAILS);
+
+    public static final Comparator<Pom> COMPARE_ALL = compare(COMPARE_ALL_DETAILS);
+    public static final Comparator<Pom> COMPARE_GAV = compare(COMPARE_GAV_DETAILS);
+    public static final Comparator<Pom> COMPARE_CHECKSUM = compare(COMPARE_CHECKSUM_DETAILS);
+    public static final Comparator<Pom> COMPARE_REPOSITORY = compare(COMPARE_REPOSITORY_DETAILS);
+
+    private static Comparator<Pom> compare(Comparator<Pom> baseComparator) {
+        return baseComparator.thenComparing(
+                (p1, p2) -> nullsLast(compare(baseComparator)).compare(p1.getParent(), p2.getParent()));
+    }
 
     private final GroupId groupId;
     private final ArtifactId artifactId;
@@ -73,60 +109,7 @@ public class Pom implements Comparable<Pom> {
 
     @Override
     public int compareTo(Pom o) {
-        if (this.groupId.compareTo(o.groupId) != 0) {
-            return this.groupId.compareTo(o.groupId);
-        }
-
-        if (this.artifactId.compareTo(o.artifactId) != 0) {
-            return this.artifactId.compareTo(o.artifactId);
-        }
-
-        if (this.version.compareTo(o.version) != 0) {
-            return this.version.compareTo(o.version);
-        }
-
-        String pathCmp = this.relativePath == null ? "" : this.relativePath;
-        String oPathCmp = o.relativePath == null ? "" : o.relativePath;
-
-        if (pathCmp.compareTo(oPathCmp) != 0) {
-            return pathCmp.compareTo(oPathCmp);
-        }
-
-        ResolvedUrl resolvedCmp = this.resolved == null ? ResolvedUrl.Unresolved() : this.resolved;
-        ResolvedUrl oResolvedCmp = o.resolved == null ? ResolvedUrl.Unresolved() : o.resolved;
-
-        if (resolvedCmp.compareTo(oResolvedCmp) != 0) {
-            return resolvedCmp.compareTo(oResolvedCmp);
-        }
-
-        RepositoryId repoIdCmp = this.repositoryId == null ? RepositoryId.None() : this.repositoryId;
-        RepositoryId oRepoIdCmp = o.repositoryId == null ? RepositoryId.None() : o.repositoryId;
-
-        if (repoIdCmp.compareTo(oRepoIdCmp) != 0) {
-            return repoIdCmp.compareTo(oRepoIdCmp);
-        }
-
-        if (this.checksumAlgorithm.compareTo(o.checksumAlgorithm) != 0) {
-            return this.checksumAlgorithm.compareTo(o.checksumAlgorithm);
-        }
-
-        if (this.checksum.compareTo(o.checksum) != 0) {
-            return this.checksum.compareTo(o.checksum);
-        }
-
-        if (this.parent == null && o.parent != null) {
-            return -1;
-        }
-
-        if (this.parent != null && o.parent == null) {
-            return 1;
-        }
-
-        if (this.parent != null && o.parent != null && this.parent.compareTo(o.parent) != 0) {
-            return this.parent.compareTo(o.parent);
-        }
-
-        return 0;
+        return COMPARE_ALL.compare(this, o);
     }
 
     @Override
@@ -138,30 +121,7 @@ public class Pom implements Comparable<Pom> {
             return false;
         }
         Pom other = (Pom) obj;
-        // Poms are either defined by their relative path or resolved from a repository by their GAV.
-        // We cannot know where poms defined by their relative path will be hosted and thus their
-        // resolved fields are null.
-        String pathCmp = this.relativePath == null ? "" : this.relativePath;
-        String otherPathCmp = other.relativePath == null ? "" : other.relativePath;
-
-        ResolvedUrl resolvedCmp = this.resolved == null ? ResolvedUrl.Unresolved() : this.resolved;
-        ResolvedUrl otherResolvedCmp = other.resolved == null ? ResolvedUrl.Unresolved() : other.resolved;
-
-        RepositoryId repoIdCmp = this.repositoryId == null ? RepositoryId.None() : this.repositoryId;
-        RepositoryId otherRepoIdCmp = other.repositoryId == null ? RepositoryId.None() : other.repositoryId;
-
-        boolean parentEqual = (this.parent == null && other.parent == null)
-                || (this.parent != null && other.parent != null && this.parent.equals(other.parent));
-
-        return this.groupId.equals(other.groupId)
-                && this.artifactId.equals(other.artifactId)
-                && this.version.equals(other.version)
-                && pathCmp.equals(otherPathCmp)
-                && resolvedCmp.equals(otherResolvedCmp)
-                && repoIdCmp.equals(otherRepoIdCmp)
-                && this.checksumAlgorithm.equals(other.checksumAlgorithm)
-                && this.checksum.equals(other.checksum)
-                && parentEqual;
+        return COMPARE_ALL.compare(this, other) == 0;
     }
 
     @Override

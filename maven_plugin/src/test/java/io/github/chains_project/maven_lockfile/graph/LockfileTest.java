@@ -30,6 +30,7 @@ public class LockfileTest {
                         Config.OnValidationFailure.Error,
                         Config.OnPomValidationFailure.Error,
                         Config.OnEnvironmentalValidationFailure.Error,
+                        Config.OnRepositoryValidationFailure.Error,
                         Config.EnvironmentInclusion.Include,
                         Config.ReductionState.NonReduced,
                         "1",

@@ -9,6 +9,7 @@ public class Config {
     private final boolean allowValidationFailure;
     private final boolean allowPomValidationFailure;
     private final boolean allowEnvironmentalValidationFailure;
+    private final boolean allowRepositoryValidationFailure;
     private final boolean includeEnvironment;
     private final boolean reduced;
     private final String mavenLockfileVersion;
@@ -20,6 +21,7 @@ public class Config {
             OnValidationFailure allowValidationFailure,
             OnPomValidationFailure allowPomValidationFailure,
             OnEnvironmentalValidationFailure allowEnvironmentalValidationFailure,
+            OnRepositoryValidationFailure allowRepositoryValidationFailure,
             EnvironmentInclusion includeEnvironment,
             ReductionState reduced,
             String mavenLockfileVersion,
@@ -30,6 +32,8 @@ public class Config {
         this.allowPomValidationFailure = allowPomValidationFailure.equals(OnPomValidationFailure.Warn);
         this.allowEnvironmentalValidationFailure =
                 allowEnvironmentalValidationFailure.equals(OnEnvironmentalValidationFailure.Warn);
+        this.allowRepositoryValidationFailure =
+                allowRepositoryValidationFailure.equals(OnRepositoryValidationFailure.Warn);
         this.includeEnvironment = includeEnvironment.equals(EnvironmentInclusion.Include);
         this.reduced = reduced.equals(ReductionState.Reduced);
         this.mavenLockfileVersion = mavenLockfileVersion;
@@ -42,6 +46,7 @@ public class Config {
         this.allowValidationFailure = false;
         this.allowPomValidationFailure = false;
         this.allowEnvironmentalValidationFailure = false;
+        this.allowRepositoryValidationFailure = false;
         this.includeEnvironment = true;
         this.reduced = false;
         this.mavenLockfileVersion = "1";
@@ -97,6 +102,20 @@ public class Config {
         return allowEnvironmentalValidationFailure
                 ? OnEnvironmentalValidationFailure.Warn
                 : OnEnvironmentalValidationFailure.Error;
+    }
+    /**
+     * @return the allowRepositoryValidationFailure
+     */
+    public boolean isAllowRepositoryValidationFailure() {
+        return allowRepositoryValidationFailure;
+    }
+    /**
+     * @return the OnRepositoryValidationFailure enum
+     */
+    public OnRepositoryValidationFailure getOnRepositoryValidationFailure() {
+        return allowRepositoryValidationFailure
+                ? OnRepositoryValidationFailure.Warn
+                : OnRepositoryValidationFailure.Error;
     }
     /**
      * @return the includeEnvironment
@@ -157,6 +176,11 @@ public class Config {
     }
 
     public enum OnEnvironmentalValidationFailure {
+        Warn,
+        Error
+    }
+
+    public enum OnRepositoryValidationFailure {
         Warn,
         Error
     }

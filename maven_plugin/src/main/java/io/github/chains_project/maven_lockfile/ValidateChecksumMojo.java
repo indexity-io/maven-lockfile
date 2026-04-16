@@ -7,10 +7,11 @@ import io.github.chains_project.maven_lockfile.data.Config;
 import io.github.chains_project.maven_lockfile.data.Environment;
 import io.github.chains_project.maven_lockfile.data.LockFile;
 import io.github.chains_project.maven_lockfile.data.MetaData;
+import io.github.chains_project.maven_lockfile.reporting.EnvironmentDifference;
 import io.github.chains_project.maven_lockfile.reporting.LockFileDifference;
 import io.github.chains_project.maven_lockfile.reporting.PluginLogManager;
+import io.github.chains_project.maven_lockfile.reporting.PomDifference;
 import java.io.IOException;
-import java.util.Objects;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -52,34 +53,15 @@ public class ValidateChecksumMojo extends AbstractLockfileMojo {
             AbstractChecksumCalculator checksumCalculator = getChecksumCalculator(config, true);
             LockFile lockFileFromProject = LockFileFacade.generateLockFileFromProject(
                     session, project, dependencyCollectorBuilder, checksumCalculator, metaData, repositorySystem);
-            if (!Objects.equals(lockFileFromFile.getEnvironment(), lockFileFromProject.getEnvironment())) {
-                String sb = "Lock file environment does not match project environment.\n"
-                        + "Lockfile environment: " + lockFileFromFile.getEnvironment() + "\n"
-                        + "Project environment:  " + lockFileFromProject.getEnvironment() + "\n";
 
-                switch (config.getOnEnvironmentalValidationFailure()) {
-                    case Warn:
-                        getLog().warn(sb);
-                        break;
-                    case Error:
-                        throw new MojoExecutionException("Failed verifying environment. " + sb);
-                }
-            }
-            if (!Objects.equals(lockFileFromFile.getPom(), lockFileFromProject.getPom())) {
-                String sb = "Pom checksum mismatch. Differences:\nYour lockfile pom:\n"
-                        + JsonUtils.toJson(lockFileFromFile.getPom())
-                        + "\n" + "Your project pom:\n"
-                        + JsonUtils.toJson(lockFileFromProject.getPom())
-                        + "\n";
+            var environmentDifferences = EnvironmentDifference.environmentDifference(
+                    lockFileFromFile.getEnvironment(), lockFileFromProject.getEnvironment(), config);
+            var pomDifferences =
+                    PomDifference.pomDifferences(lockFileFromFile.getPom(), lockFileFromProject.getPom(), config);
 
-                switch (config.getOnPomValidationFailure()) {
-                    case Warn:
-                        getLog().warn(sb);
-                        break;
-                    case Error:
-                        throw new MojoExecutionException("Failed verifying lock file. " + sb);
-                }
-            }
+            var combinedDifferences = environmentDifferences.combinedWith(pomDifferences);
+            combinedDifferences.reportOrFail();
+
             if (!lockFileFromFile.equals(lockFileFromProject)) {
                 var diff = LockFileDifference.diff(lockFileFromFile, lockFileFromProject);
                 String sb = "Lock file validation failed. Differences:" + "\n"

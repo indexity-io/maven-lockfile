@@ -55,6 +55,9 @@ public abstract class AbstractLockfileMojo extends AbstractMojo {
     @Parameter(property = "allowEnvironmentalValidationFailure", defaultValue = "false")
     protected String allowEnvironmentalValidationFailure;
 
+    @Parameter(property = "allowRepositoryValidationFailure", defaultValue = "false")
+    protected String allowRepositoryValidationFailure;
+
     @Parameter(property = "includeEnvironment", defaultValue = "true")
     protected String includeEnvironment;
 
@@ -150,6 +153,10 @@ public abstract class AbstractLockfileMojo extends AbstractMojo {
                 Boolean.parseBoolean(allowEnvironmentalValidationFailure)
                         ? Config.OnEnvironmentalValidationFailure.Warn
                         : Config.OnEnvironmentalValidationFailure.Error;
+        Config.OnRepositoryValidationFailure onRepositoryValidationFailure =
+                Boolean.parseBoolean(allowRepositoryValidationFailure)
+                        ? Config.OnRepositoryValidationFailure.Warn
+                        : Config.OnRepositoryValidationFailure.Error;
         Config.EnvironmentInclusion environmentInclusion = Boolean.parseBoolean(includeEnvironment)
                 ? Config.EnvironmentInclusion.Include
                 : Config.EnvironmentInclusion.Exclude;
@@ -161,6 +168,7 @@ public abstract class AbstractLockfileMojo extends AbstractMojo {
                 onValidationFailure,
                 onPomValidationFailure,
                 onEnvironmentalValidationFailure,
+                onRepositoryValidationFailure,
                 environmentInclusion,
                 reductionState,
                 mojo.getPlugin().getVersion(),

@@ -611,6 +611,29 @@ public class IntegrationTestsIT {
     }
 
     @MavenTest
+    public void pomParentCheckShouldFailOnRepoChange(MavenExecutionResult result) throws Exception {
+        // contract: if the repository of the parent of the pom does not match is should fail with reason being pom
+        // didn't match. The 'resolved' property is changed to cause this test to fail.
+        assertThat(result).isFailure();
+        String stdout = Files.readString(result.getMavenLog().getStdout());
+        assertThat(stdout.contains("Pom validation failed.")
+                        && stdout.contains("Repository details changed for parent pom"))
+                .isTrue();
+    }
+
+    @MavenTest
+    public void pomParentCheckShouldSucceedOnAllowedRepoChange(MavenExecutionResult result) throws Exception {
+        // contract: if the repository of the parent of the pom does not match, but repository details validation is
+        // allowed
+        // it should succeed with a warning.
+        assertThat(result).isSuccessful();
+        String stdout = Files.readString(result.getMavenLog().getStdout());
+        assertThat(stdout.contains("[WARNING] Pom validation failed.")
+                        && stdout.contains("Repository details changed for parent pom"))
+                .isTrue();
+    }
+
+    @MavenTest
     public void environmentalCheckShouldFail(MavenExecutionResult result) throws Exception {
         // contract: if the pom checksum does not match is should fail with reason being pom didn't match.
         System.out.println("Running 'environmentalCheckShouldFail' integration test.");
